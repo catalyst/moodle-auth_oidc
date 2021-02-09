@@ -113,14 +113,16 @@ class auth_plugin_oidc extends \auth_plugin_base {
      */
     public function should_login_redirect() {
         global $SESSION;
-        $oidc = optional_param('oidc', null, PARAM_BOOL);
+        $oidc = optional_param('oidc', 0, PARAM_BOOL);
+
+        if ($this->config->forceredirect) {
+            $oidc = 1; // Always redirect if we have enabled the forceredirect setting.
+        }
+
         // Also support noredirect param - used by other auth plugins.
         $noredirect = optional_param('noredirect', 0, PARAM_BOOL);
         if (!empty($noredirect)) {
             $oidc = 0;
-        }
-        if (!isset($this->config->forceredirect) || !$this->config->forceredirect) {
-            return false; // Never redirect if we haven't enabled the forceredirect setting.
         }
         // Never redirect on POST.
         if (isset($_SERVER['REQUEST_METHOD']) && ($_SERVER['REQUEST_METHOD'] == 'POST')) {
