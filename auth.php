@@ -117,6 +117,17 @@ class auth_plugin_oidc extends \auth_plugin_base {
     }
 
     /**
+     * The hook is called in require_logout()
+     *
+     * @return void
+     */
+    public function postlogout_hook($user) {
+        if ($alterlogout = get_config('auth_oidc', 'alterlogout') && $user->auth == $this->authtype) {
+            redirect($alterlogout);
+        }
+    }
+
+    /**
      * Handle requests to the redirect URL.
      *
      * @return mixed Determined by loginflow.
