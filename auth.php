@@ -122,7 +122,7 @@ class auth_plugin_oidc extends \auth_plugin_base {
      * @return void
      */
     public function postlogout_hook($user) {
-        if ($alterlogout = get_config('auth_oidc', 'alterlogout') && $user->auth == $this->authtype) {
+        if (($alterlogout = get_config('auth_oidc', 'alterlogout')) && $user->auth == $this->authtype) {
             redirect($alterlogout);
         }
     }
