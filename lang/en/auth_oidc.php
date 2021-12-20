@@ -125,6 +125,7 @@ $string['errorauthnoidtoken'] = 'OpenID Connect id_token not received.';
 $string['errorauthunknownstate'] = 'Unknown state.';
 $string['errorauthuseralreadyconnected'] = 'You\'re already connected to a different OpenID Connect user.';
 $string['errorauthuserconnectedtodifferent'] = 'The OpenID Connect user that authenticated is already connected to a Moodle user.';
+$string['errorauthsuspendeduser'] = 'You have logged in successfully as \'{$a}\' but your account has been suspended in Moodle.';
 $string['errorbadloginflow'] = 'Invalid authentication type specified. Note: If you are receiving this after a recent installation or upgrade, please clear your Moodle cache.';
 $string['errorjwtbadpayload'] = 'Could not read JWT payload.';
 $string['errorjwtcouldnotreadheader'] = 'Could not read JWT header';
