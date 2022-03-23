@@ -493,6 +493,23 @@ class authcode extends base {
                         $username = $idtoken->claim('unique_name');
                     }
                 }
+            } else {
+                if (!empty($this->config->userrestrictions)) {
+                    $match = false;
+                    $restrictionlist = explode("\n", $this->config->userrestrictions);
+                    $restrictionlist = array_filter(array_map('trim', $restrictionlist));
+                    foreach ($restrictionlist as $respattern) {
+                        $found = [];
+                        $match = preg_match("/$respattern/", $username, $found);
+                        if ($match !== false && count($found) == 2) {
+                            $username = $found[1];
+                            break;
+                        }
+                    }
+                    if (!$match) {
+                        throw new \moodle_exception('failedusernamematch', 'auth_oidc');
+                    }
+                }
             }
 
             // See if we have an object listing.
