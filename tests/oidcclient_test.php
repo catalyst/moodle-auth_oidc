@@ -107,6 +107,7 @@ class auth_oidc_oidcclient_testcase extends \advanced_testcase {
      *
      * @param $endpoints
      * @param $expectedexception
+     * @dataProvider dataprovider_endpoints
      */
     public function test_endpoints_getters_and_setters($endpoints, $expectedexception) {
         if (!empty($expectedexception)) {
