@@ -37,7 +37,7 @@ class auth_oidc_oidcclient_testcase extends \advanced_testcase {
     /**
      * Perform setup before every test. This tells Moodle's phpunit to reset the database after every test.
      */
-    protected function setUp() {
+    protected function setUp():void {
         parent::setUp();
         $this->resetAfterTest(true);
     }
@@ -108,6 +108,8 @@ class auth_oidc_oidcclient_testcase extends \advanced_testcase {
      * @param $endpoints
      * @param $expectedexception
      * @dataProvider dataprovider_endpoints
+     * @param $endpoints
+     * @param $expectedexception
      */
     public function test_endpoints_getters_and_setters($endpoints, $expectedexception) {
         if (!empty($expectedexception)) {

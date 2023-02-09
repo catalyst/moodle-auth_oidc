@@ -26,6 +26,20 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// IdP types.
+CONST AUTH_OIDC_IDP_TYPE_AZURE_AD = 1;
+CONST AUTH_OIDC_IDP_TYPE_MICROSOFT = 2;
+CONST AUTH_OIDC_IDP_TYPE_OTHER = 3;
+
+// Azure AD / Microsoft endpoint version.
+CONST AUTH_OIDC_AAD_ENDPOINT_VERSION_UNKNOWN = 0;
+CONST AUTH_OIDC_AAD_ENDPOINT_VERSION_1 = 1;
+CONST AUTH_OIDC_AAD_ENDPOINT_VERSION_2 = 2;
+
+// OIDC application authentication method.
+CONST AUTH_OIDC_AUTH_METHOD_SECRET = 1;
+CONST AUTH_OIDC_AUTH_METHOD_CERTIFICATE = 2;
+
 /**
  * Initialize custom icon.
  *
@@ -244,6 +258,7 @@ function auth_oidc_get_remote_fields() {
             'officeLocation' => get_string('settings_fieldmap_field_officeLocation', 'auth_oidc'),
             'preferredName' => get_string('settings_fieldmap_field_preferredName', 'auth_oidc'),
             'manager' => get_string('settings_fieldmap_field_manager', 'auth_oidc'),
+            'manager_email' => get_string('settings_fieldmap_field_manager_email', 'auth_oidc'),
             'teams' => get_string('settings_fieldmap_field_teams', 'auth_oidc'),
             'groups' => get_string('settings_fieldmap_field_groups', 'auth_oidc'),
             'roles' => get_string('settings_fieldmap_field_roles', 'auth_oidc'),
@@ -276,7 +291,7 @@ function auth_oidc_get_remote_fields() {
         }
     } else {
         $remotefields = [
-            '' => '',
+            '' => get_string('settings_fieldmap_feild_not_mapped', 'auth_oidc'),
             'objectId' => get_string('settings_fieldmap_field_objectId', 'auth_oidc'),
             'userPrincipalName' => get_string('settings_fieldmap_field_userPrincipalName', 'auth_oidc'),
             'givenName' => get_string('settings_fieldmap_field_givenName', 'auth_oidc'),
@@ -284,6 +299,20 @@ function auth_oidc_get_remote_fields() {
             'mail' => get_string('settings_fieldmap_field_mail', 'auth_oidc'),
         ];
     }
+
+    return $remotefields;
+}
+
+/**
+ * Return the list of available remote fields to map email field.
+ *
+ * @return array
+ */
+function auth_oidc_get_email_remote_fields() {
+    $remotefields = [
+        'mail' => get_string('settings_fieldmap_field_mail', 'auth_oidc'),
+        'userPrincipalName' => get_string('settings_fieldmap_field_userPrincipalName', 'auth_oidc'),
+    ];
 
     return $remotefields;
 }
@@ -324,7 +353,39 @@ function auth_oidc_get_field_mappings() {
         }
     }
 
+    if (!array_key_exists('email', $fieldmappings)) {
+        $fieldmappings['email'] = auth_oidc_apply_default_email_mapping();
+    }
+
     return $fieldmappings;
+}
+
+/**
+ * Apply default email mapping settings.
+ *
+ * @return array
+ */
+function auth_oidc_apply_default_email_mapping() {
+    set_config('field_map_email', 'mail', 'auth_oidc');
+
+    $authoidcconfig = get_config('auth_oidc');
+
+    $fieldsetting = [];
+    $fieldsetting['field_map'] = 'mail';
+
+    if (property_exists($authoidcconfig, 'field_lock_email')) {
+        $fieldsetting['field_lock'] = $authoidcconfig->field_lock_email;
+    } else {
+        $fieldsetting['field_lock'] = 'unlocked';
+    }
+
+    if (property_exists($authoidcconfig, 'field_updatelocal_email')) {
+        $fieldsetting['update_local'] = $authoidcconfig->field_updatelocal_email;
+    } else {
+        $fieldsetting['update_local'] = 'always';
+    }
+
+    return $fieldsetting;
 }
 
 /**
@@ -381,6 +442,7 @@ function auth_oidc_display_auth_lock_options($settings, $auth, $userfields, $hel
     }
 
     $remotefields = auth_oidc_get_remote_fields();
+    $emailremotefields = auth_oidc_get_email_remote_fields();
 
     foreach ($userfields as $field) {
         // Define the fieldname we display to the  user.
@@ -415,8 +477,13 @@ function auth_oidc_display_auth_lock_options($settings, $auth, $userfields, $hel
         } else if ($mapremotefields) {
             // We are mapping to a remote field here.
             // Mapping.
-            $settings->add(new admin_setting_configselect("auth_oidc/field_map_{$field}",
-                get_string('auth_fieldmapping', 'auth', $fieldname), '', null, $remotefields));
+            if ($field == 'email') {
+                $settings->add(new admin_setting_configselect("auth_oidc/field_map_{$field}",
+                    get_string('auth_fieldmapping', 'auth', $fieldname), '', null, $emailremotefields));
+            } else {
+                $settings->add(new admin_setting_configselect("auth_oidc/field_map_{$field}",
+                    get_string('auth_fieldmapping', 'auth', $fieldname), '', null, $remotefields));
+            }
 
             // Update local.
             $settings->add(new admin_setting_configselect("auth_{$auth}/field_updatelocal_{$field}",
@@ -431,7 +498,6 @@ function auth_oidc_display_auth_lock_options($settings, $auth, $userfields, $hel
             // Lock fields.
             $settings->add(new admin_setting_configselect("auth_{$auth}/field_lock_{$field}",
                 get_string('auth_fieldlockfield', 'auth', $fieldname), '', 'unlocked', $lockoptions));
-
         } else {
             // Lock fields Only.
             $settings->add(new admin_setting_configselect("auth_{$auth}/field_lock_{$field}",
@@ -451,4 +517,112 @@ function auth_oidc_get_all_user_fields() {
     $userfields = array_merge($userfields, $authplugin->get_custom_user_profile_fields());
 
     return $userfields;
+}
+
+/**
+ * Determine the endpoint version of the given Azure AD / Microsoft authorization or token endpoint.
+ *
+ * @return int
+ */
+function auth_oidc_determine_endpoint_version(string $endpoint) {
+    $endpointversion = AUTH_OIDC_AAD_ENDPOINT_VERSION_UNKNOWN;
+
+    if (strpos($endpoint, 'https://login.microsoftonline.com/') === 0) {
+        if (strpos($endpoint, 'oauth2/v2.0/') !== false) {
+            $endpointversion = AUTH_OIDC_AAD_ENDPOINT_VERSION_2;
+        } else if (strpos($endpoint, 'oauth2') !== false) {
+            $endpointversion = AUTH_OIDC_AAD_ENDPOINT_VERSION_1;
+        }
+    }
+
+    return $endpointversion;
+}
+
+/**
+ * Return formatted form element name to be used by configuration variables in custom forms.
+ *
+ * @param string $stringid
+ * @return string
+ */
+function auth_oidc_config_name_in_form(string $stringid) {
+    $formatedformitemname = get_string($stringid, 'auth_oidc') .
+        html_writer::span('auth_oidc | ' . $stringid, 'form-shortname d-block small text-muted');
+
+    return $formatedformitemname;
+}
+
+/**
+ * Check if the auth_oidc plugin has been configured with the minimum settings for the SSO integration to work.
+ *
+ * @return bool
+ */
+function auth_oidc_is_setup_complete() {
+    $pluginconfig = get_config('auth_oidc');
+    if (empty($pluginconfig->clientid) || empty($pluginconfig->idptype) || empty($pluginconfig->clientauthmethod) ||
+        (in_array($pluginconfig->idptype, [AUTH_OIDC_IDP_TYPE_AZURE_AD, AUTH_OIDC_IDP_TYPE_MICROSOFT]) &&
+            empty($pluginconfig->tenantnameorguid))) {
+        return false;
+    }
+
+    switch ($pluginconfig->clientauthmethod) {
+        case AUTH_OIDC_AUTH_METHOD_SECRET:
+            if (empty($pluginconfig->clientsecret)) {
+                return false;
+            }
+            break;
+        case AUTH_OIDC_AUTH_METHOD_CERTIFICATE:
+            if (empty($pluginconfig->clientcert) || empty($pluginconfig->clientprivatekey)) {
+                return false;
+            }
+            break;
+    }
+
+    if (empty($pluginconfig->authendpoint) || empty($pluginconfig->tokenendpoint)) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Return the name of the configured IdP type.
+ *
+ * @return lang_string|string
+ */
+function auth_oidc_get_idp_type_name() {
+    $idptypename = '';
+
+    switch (get_config('auth_oidc', 'idptype')) {
+        case AUTH_OIDC_IDP_TYPE_AZURE_AD:
+            $idptypename = get_string('idp_type_azuread', 'auth_oidc');
+            break;
+        case AUTH_OIDC_IDP_TYPE_MICROSOFT:
+            $idptypename = get_string('idp_type_microsoft', 'auth_oidc');
+            break;
+        case AUTH_OIDC_IDP_TYPE_OTHER:
+            $idptypename = get_string('idp_type_other', 'auth_oidc');
+            break;
+    }
+
+    return $idptypename;
+}
+
+/**
+ * Return the name of the configured authentication method.
+ *
+ * @return lang_string|string
+ */
+function auth_oidc_get_client_auth_method_name() {
+    $authmethodname = '';
+
+    switch (get_config('auth_oidc', 'clientauthmethod')) {
+        case AUTH_OIDC_AUTH_METHOD_SECRET:
+            $authmethodname = get_string('auth_method_secret', 'auth_oidc');
+            break;
+        case AUTH_OIDC_AUTH_METHOD_CERTIFICATE:
+            $authmethodname = get_string('auth_method_certificate', 'auth_oidc');
+            break;
+    }
+
+    return $authmethodname;
 }

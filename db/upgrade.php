@@ -19,11 +19,14 @@
  *
  * @package auth_oidc
  * @author James McQuillan <james.mcquillan@remote-learner.net>
+ * @author Lai Wei <lai.wei@enovation.ie>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @copyright (C) 2014 onwards Microsoft, Inc. (http://microsoft.com/)
  */
 
 defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/auth/oidc/lib.php');
 
 /**
  * Update plugin.
@@ -307,6 +310,68 @@ function xmldb_auth_oidc_upgrade($oldversion) {
 
         // Oidc savepoint reached.
         upgrade_plugin_savepoint(true, 2020071507, 'auth', 'oidc');
+    }
+
+    if ($oldversion < 2022041901) {
+        // Define field sid to be added to auth_oidc_token.
+        $table = new xmldb_table('auth_oidc_token');
+        $field = new xmldb_field('sid', XMLDB_TYPE_CHAR, '36', null, null, null, null, 'idtoken');
+
+        // Conditionally launch add field sid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Oidc savepoint reached.
+        upgrade_plugin_savepoint(true, 2022041901, 'auth', 'oidc');
+    }
+
+    if ($oldversion < 2022041906) {
+        // Update idptype config.
+        $idptypeconfig = get_config('auth_oidc', 'idptype');
+        $authorizationendpoint = get_config('auth_oidc', 'authendpoint');
+        if (empty($idptypeconfig)) {
+            if (!$authorizationendpoint) {
+                set_config('idptype', AUTH_OIDC_IDP_TYPE_AZURE_AD, 'auth_oidc');
+            } else {
+                $endpointversion = auth_oidc_determine_endpoint_version($authorizationendpoint);
+                switch ($endpointversion) {
+                    case AUTH_OIDC_AAD_ENDPOINT_VERSION_1:
+                        set_config('idptype', AUTH_OIDC_IDP_TYPE_AZURE_AD, 'auth_oidc');
+                        break;
+                    case AUTH_OIDC_AAD_ENDPOINT_VERSION_2:
+                        set_config('idptype', AUTH_OIDC_IDP_TYPE_MICROSOFT, 'auth_oidc');
+                        break;
+                    default:
+                        set_config('idptype', AUTH_OIDC_IDP_TYPE_OTHER, 'auth_oidc');
+                }
+            }
+        }
+
+        // Update client authentication type configuration settings.
+        $clientauthmethodconfig = get_config('auth_oidc', 'clientauthmethod');
+        if (empty($clientauthmethodconfig)) {
+            $clientsecretconfig = get_config('auth_oidc', 'clientsecret');
+            $clientcertificateconfig = get_config('auth_oidc', 'clientcert');
+            $clientprivatekeyconfig = get_config('auth_oidc', 'clientprivatekey');
+            if (empty($clientsecretconfig) && !empty($clientcertificateconfig) && !empty($clientprivatekeyconfig)) {
+                set_config('clientauthmethod', AUTH_OIDC_AUTH_METHOD_CERTIFICATE, 'auth_oidc');
+            } else {
+                set_config('clientauthmethod', AUTH_OIDC_AUTH_METHOD_SECRET, 'auth_oidc');
+            }
+        }
+
+        // Update tenantnameorguid config.
+        $tenantnameorguidconfig = get_config('auth_oidc', 'tenantnameorguid');
+        if (empty($tenantnameorguidconfig)) {
+            $aadtenantconfig = get_config('local_o365', 'aadtenant');
+            if ($aadtenantconfig) {
+                set_config('tenantnameorguid', $aadtenantconfig, 'auth_oidc');
+            }
+        }
+
+        // Oidc savepoint reached.
+        upgrade_plugin_savepoint(true, 2022041906, 'auth', 'oidc');
     }
 
     return true;

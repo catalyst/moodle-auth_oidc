@@ -40,10 +40,8 @@ class utils {
      */
     public static function process_json_response($response, array $expectedstructure = array()) {
         $backtrace = debug_backtrace(0);
-        $callingclass = (isset($backtrace[1]['class'])) ? $backtrace[1]['class'] : '?';
-        $callingfunc = (isset($backtrace[1]['function'])) ? $backtrace[1]['function'] : '?';
         $callingline = (isset($backtrace[0]['line'])) ? $backtrace[0]['line'] : '?';
-        $caller = $callingclass.'::'.$callingfunc.':'.$callingline;
+        $caller = __METHOD__ . ':' . $callingline;
 
         $result = @json_decode($response, true);
         if (empty($result) || !is_array($result)) {
@@ -135,8 +133,17 @@ class utils {
      * @return string The redirect URL.
      */
     public static function get_redirecturl() {
-        global $CFG;
-        $wwwroot = (!empty($CFG->loginhttps)) ? str_replace('http://', 'https://', $CFG->wwwroot) : $CFG->wwwroot;
-        return $wwwroot.'/auth/oidc/';
+        $redirecturl = new \moodle_url('/auth/oidc/');
+        return $redirecturl->out(false);
+    }
+
+    /**
+     * Get the front channel logout URL that should be set in the identity provider.
+     *
+     * @return string The redirect URL.
+     */
+    public static function get_frontchannellogouturl() {
+        $logouturl = new \moodle_url('/auth/oidc/logout.php');
+        return $logouturl->out(false);
     }
 }
