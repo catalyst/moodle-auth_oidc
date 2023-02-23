@@ -364,7 +364,8 @@ class oidcclient {
                 $params['client_assertion'] = static::generate_client_assertion();
                 break;
             default:
-                $params['client_secret'] = $this->clientsecret;
+                #$params['client_secret'] = $this->clientsecret;
+                $params = [];
         }
 
         $tokenendpoint = $this->endpoints['token'];
