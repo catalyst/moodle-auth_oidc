@@ -225,12 +225,20 @@ if ($hassiteconfig) {
 
     // Other settings page and its settings.
     $fieldmappingspage = new admin_settingpage('auth_oidc_field_mapping', get_string('settings_page_field_mapping', 'auth_oidc'));
+    $fieldmappingspage->add(new admin_setting_configcheckbox('auth_oidc/custom_field_mapping',
+        get_string('cfg_custom_mapping', 'auth_oidc'), get_string('cfg_custom_mapping_desc', 'auth_oidc'), 0));
     $ADMIN->add('oidcfolder', $fieldmappingspage);
 
     // Display locking / mapping of profile fields.
     $authplugin = get_auth_plugin('oidc');
-    auth_oidc_display_auth_lock_options($fieldmappingspage, $authplugin->authtype, $authplugin->userfields,
-        get_string('cfg_field_mapping_desc', 'auth_oidc'), true, false, $authplugin->get_custom_user_profile_fields());
+    if (get_config('auth_oidc', 'custom_field_mapping')) {
+        display_auth_lock_options($fieldmappingspage, $authplugin->authtype, $authplugin->userfields,
+            get_string('cfg_field_mapping_desc', 'auth_oidc'), true, true, $authplugin->get_custom_user_profile_fields());
+    } else {
+        auth_oidc_display_auth_lock_options($fieldmappingspage, $authplugin->authtype, $authplugin->userfields,
+            get_string('cfg_field_mapping_desc', 'auth_oidc'), true, false, $authplugin->get_custom_user_profile_fields());
+    }
+    
 }
 
 $settings = null;

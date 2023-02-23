@@ -90,6 +90,11 @@ class application extends moodleform {
         $mform->disabledIf('clientsecret', 'clientauthmethod', 'neq', AUTH_OIDC_AUTH_METHOD_SECRET);
         $mform->addElement('static', 'clientsecret_help', '', get_string('clientsecret_help', 'auth_oidc'));
 
+        // Auth token secret toggle.
+        $mform->addElement('advcheckbox', 'accesstokenclientsecret', auth_oidc_config_name_in_form('accesstokenclientsecret'), '');
+        $mform->setType('accesstokenclientsecret', PARAM_BOOL);
+        $mform->addElement('static', 'accesstokenclientsecret_help', '', get_string('accesstokenclientsecret_help', 'auth_oidc'));
+
         // Certificate private key.
         $mform->addElement('textarea', 'clientprivatekey', auth_oidc_config_name_in_form('clientprivatekey'),
             ['rows' => 10, 'cols' => 80]);

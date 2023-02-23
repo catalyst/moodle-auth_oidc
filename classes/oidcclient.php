@@ -333,6 +333,7 @@ class oidcclient {
             'redirect_uri' => $this->redirecturi,
         ];
 
+        $sendsecret = get_config('auth_oidc', 'accesstokenclientsecret');
         switch (get_config('auth_oidc', 'clientauthmethod')) {
             case AUTH_OIDC_AUTH_METHOD_CERTIFICATE:
                 $params['client_assertion_type'] = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
@@ -340,7 +341,7 @@ class oidcclient {
                 $params['tenant'] = 'common';
                 break;
             default:
-                $params['client_secret'] = $this->clientsecret;
+                $params = $sendsecret ? ['client_secret' => $this->clientsecret] : [];
         }
         $returned = $this->httpclient->post($this->endpoints['token'], $params);
         return utils::process_json_response($returned, ['id_token' => null]);
@@ -365,6 +366,7 @@ class oidcclient {
                 break;
             default:
                 $params['client_secret'] = $this->clientsecret;
+                $params = [];
         }
 
         $tokenendpoint = $this->endpoints['token'];

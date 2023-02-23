@@ -257,19 +257,19 @@ class base {
                 if (!isset($userdata['email'])) {
                     $email = $token->claim('email');
                     if (!empty($email)) {
-                        $userdata['mail'] = $email;
+                        $userdata['email'] = $email;
                     } else {
                         if (!empty($upn)) {
                             $aademailvalidateresult = filter_var($upn, FILTER_VALIDATE_EMAIL);
                             if (!empty($aademailvalidateresult)) {
-                                $userdata['mail'] = $aademailvalidateresult;
+                                $userdata['email'] = $aademailvalidateresult;
                             }
                         }
                     }
                 }
             }
 
-            $updateduser = static::apply_configured_fieldmap_from_token($userdata, $eventtype);
+            $updateduser = static::apply_configured_fieldmap_from_token($userdata, $eventtype, $token);
             $userinfo = (array)$updateduser;
         }
 
@@ -281,9 +281,10 @@ class base {
      *
      * @param array $userdata
      * @param string $eventtype
+     * @param jwt $token
      * @return stdClass
      */
-    public static function apply_configured_fieldmap_from_token(array $userdata, string $eventtype) {
+    public static function apply_configured_fieldmap_from_token(array $userdata, string $eventtype, jwt $token) {
         $user = new stdClass();
 
         $fieldmappings = auth_oidc_get_field_mappings();
@@ -299,6 +300,12 @@ class base {
 
             if (isset($userdata[$remotefield])) {
                 $user->$localfield = $userdata[$remotefield];
+            } else {
+                // Try a manual token claim on the value provided.
+                $tokenval = $token->claim($remotefield);
+                if (!is_null($tokenval)) {
+                    $user->$localfield = $tokenval;
+                }
             }
         }
 

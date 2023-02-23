@@ -60,6 +60,8 @@ $string['idp_type_azuread'] = 'Azure AD (v1.0)';
 $string['idp_type_microsoft'] = 'Microsoft identity platform (v2.0)';
 $string['idp_type_other'] = 'Other';
 $string['cfg_authenticationlink_desc'] = '<a href="{$a}" target="_blank">Link to IdP and authentication configuration</a>';
+$string['accesstokenclientsecret'] = 'Send client secret in access token requests.';
+$string['accesstokenclientsecret_help'] = 'Some IdPs like Azure B2C do not allow the client secret to be sent in token exchange requests. Disable this config to remove the client secret from the request.';
 $string['authendpoint'] = 'Authorization Endpoint';
 $string['authendpoint_help'] = 'The URI of the Authorization endpoint from your IdP to use.<br/>
 Note if the site is to be configured to allow users from other tenants to access, tenant specific authorization endpoint cannot be used.';
@@ -83,6 +85,8 @@ $string['clientcert'] = 'Client certificate public key';
 $string['clientcert_help'] = 'When using <b>certificate</b> authentication method, this is the public key, or certificate, used in to authenticate with IdP.';
 $string['tenantnameorguid'] = 'Tenant name or GUID';
 $string['tenantnameorguid_help'] = 'Don\'t include https:// if use tenant name.';
+$string['cfg_custom_mapping'] = 'Use custom data mappings';
+$string['cfg_custom_mapping_desc'] = 'Allow custom attribute entry for data mappings.';
 $string['cfg_domainhint_key'] = 'Domain Hint';
 $string['cfg_domainhint_desc'] = 'When using the <b>Authorization Code</b> login flow, pass this value as the "domain_hint" parameter. "domain_hint" is used by some OpenID Connect IdP to make the login process easier for users. Check with your provider to see whether they support this parameter.';
 $string['cfg_err_invalidauthendpoint'] = 'Invalid Authorization Endpoint';
