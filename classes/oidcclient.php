@@ -299,7 +299,7 @@ class oidcclient {
             'password' => $password,
             'scope' => 'openid profile email',
             'client_id' => $this->clientid,
-            'client_secret' => $this->clientsecret,
+            //'client_secret' => $this->clientsecret,
         ];
 
         if (get_config('auth_oidc', 'idptype') != AUTH_OIDC_IDP_TYPE_MICROSOFT) {
