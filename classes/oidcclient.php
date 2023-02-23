@@ -299,7 +299,7 @@ class oidcclient {
             'password' => $password,
             'scope' => 'openid profile email',
             'client_id' => $this->clientid,
-            //'client_secret' => $this->clientsecret,
+            'client_secret' => $this->clientsecret,
         ];
 
         if (get_config('auth_oidc', 'idptype') != AUTH_OIDC_IDP_TYPE_MICROSOFT) {
@@ -340,7 +340,7 @@ class oidcclient {
                 $params['tenant'] = 'common';
                 break;
             default:
-                $params['client_secret'] = $this->clientsecret;
+                //$params['client_secret'] = $this->clientsecret;
         }
         $returned = $this->httpclient->post($this->endpoints['token'], $params);
         return utils::process_json_response($returned, ['id_token' => null]);
@@ -364,7 +364,7 @@ class oidcclient {
                 $params['client_assertion'] = static::generate_client_assertion();
                 break;
             default:
-                #$params['client_secret'] = $this->clientsecret;
+                $params['client_secret'] = $this->clientsecret;
                 $params = [];
         }
 
