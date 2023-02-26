@@ -288,9 +288,13 @@ class base {
 
         $fieldmappings = auth_oidc_get_field_mappings();
 
+        debugging(print_r($userdata, true));
+
         foreach ($fieldmappings as $localfield => $fieldmapping) {
             $remotefield = $fieldmapping['field_map'];
             $behavior = $fieldmapping['update_local'];
+
+            debugging($remotefield . ':' . $eventtype);
 
             if ($behavior !== 'on' . $eventtype && $behavior !== 'always') {
                 // Field mapping doesn't apply to this event type.
