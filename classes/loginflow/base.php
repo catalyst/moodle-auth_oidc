@@ -262,7 +262,7 @@ class base {
                         if (!empty($upn)) {
                             $aademailvalidateresult = filter_var($upn, FILTER_VALIDATE_EMAIL);
                             if (!empty($aademailvalidateresult)) {
-                                $userdata['mail'] = $aademailvalidateresult;
+                                $userdata['email'] = $aademailvalidateresult;
                             }
                         }
                     }
@@ -272,6 +272,8 @@ class base {
             $updateduser = static::apply_configured_fieldmap_from_token($userdata, $eventtype, $token);
             $userinfo = (array)$updateduser;
         }
+
+        debugging(print_r($userinfo, true));
 
         return $userinfo;
     }
@@ -307,7 +309,11 @@ class base {
                     $user->localfield = $tokenval;
                 }
             }
+
+            debugging($user->localfield . ' ' . $remotefield);
         }
+
+        debugging(print_r($token, true));
 
         return $user;
     }
