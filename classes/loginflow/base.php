@@ -306,11 +306,11 @@ class base {
                 // Try a manual token claim on the value provided.
                 $tokenval = $token->claim($remotefield);
                 if (!is_null($tokenval)) {
-                    $user->localfield = $tokenval;
+                    $user->$localfield = $tokenval;
                 }
             }
 
-            debugging($user->localfield . ' ' . $remotefield);
+            debugging($user->$localfield . ' ' . $remotefield);
         }
 
         debugging(print_r($token, true));
