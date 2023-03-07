@@ -341,7 +341,7 @@ class oidcclient {
                 $params['tenant'] = 'common';
                 break;
             default:
-                $params = $sendsecret ? ['client_secret' => $this->clientsecret] : [];
+                $params = $params['client_secret'] = $sendsecret ? $this->clientsecret : null;
         }
         $returned = $this->httpclient->post($this->endpoints['token'], $params);
         return utils::process_json_response($returned, ['id_token' => null]);
