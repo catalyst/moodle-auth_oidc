@@ -624,7 +624,8 @@ class authcode extends base {
                 if (empty($CFG->authpreventaccountcreation)) {
                     if (!$CFG->allowaccountssameemail) {
                         $userinfo = $this->get_userinfo($username);
-                        if ($DB->count_records('user', array('email' => $userinfo['email'], 'deleted' => 0)) > 0) {
+                        if (array_key_exists('email', $userinfo)
+                            && ($DB->count_records('user', array('email' => $userinfo['email'], 'deleted' => 0)) > 0)) {
                             throw new moodle_exception('errorauthloginfaileddupemail', 'auth_oidc', null, null, '1');
                         }
                     }
