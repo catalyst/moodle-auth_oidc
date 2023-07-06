@@ -617,13 +617,16 @@ class authcode extends base {
             }
             $username = trim(\core_text::strtolower($username));
             $tokenrec = $this->createtoken($oidcuniqid, $username, $authparams, $tokenparams, $idtoken, 0, $originalupn);
-
-            $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
+            $userinfo = $this->get_userinfo($username);
+            if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
+                $existinguserparams = ['email' => $userinfo['email'], 'mnethostid' => $CFG->mnet_localhost_id];
+            } else {
+                $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
+            }
             if ($DB->record_exists('user', $existinguserparams) !== true) {
                 // User does not exist. Create user if site allows, otherwise fail.
                 if (empty($CFG->authpreventaccountcreation)) {
                     if (!$CFG->allowaccountssameemail) {
-                        $userinfo = $this->get_userinfo($username);
                         if (array_key_exists('email', $userinfo)
                             && ($DB->count_records('user', array('email' => $userinfo['email'], 'deleted' => 0)) > 0)) {
                             throw new moodle_exception('errorauthloginfaileddupemail', 'auth_oidc', null, null, '1');
@@ -638,6 +641,11 @@ class authcode extends base {
                     $event->trigger();
                     throw new moodle_exception('errorauthloginfailednouser', 'auth_oidc', null, null, '1');
                 }
+            }
+            if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
+                // Here we know there is atleast 1 account with that email.
+                // We can just get the first match which is safe as long as allowaccountssameemail is off.
+                $username = $DB->get_field('user', 'username', ['email' => $userinfo['email']]);
             }
 
             $user = authenticate_user_login($username, null, true);
