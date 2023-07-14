@@ -650,7 +650,12 @@ class authcode extends base {
                 // We can just get the first match which is safe as long as allowaccountssameemail is off.
                 $username = $DB->get_field('user', 'username', ['email' => $userinfo['email']]);
             }
-            error_log("Authenticating user $username");
+            // Before we can authenticate, we need to ensure the user is authing against OIDC.
+            // This ensures we are routed to the correct login handler.
+            $authfields = ['username' => $username, 'auth' => 'oidc'];
+            if (!$DB->record_exists('user', $authfields) !== true) {
+                user_update_user($authfields); 
+            }
             $user = authenticate_user_login($username, null, true);
 
             if (!empty($user)) {
