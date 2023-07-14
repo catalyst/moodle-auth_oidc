@@ -233,7 +233,7 @@ if ($hassiteconfig) {
     $authplugin = get_auth_plugin('oidc');
     if (get_config('auth_oidc', 'custom_field_mapping')) {
         display_auth_lock_options($fieldmappingspage, $authplugin->authtype, $authplugin->userfields,
-            get_string('cfg_field_mapping_desc', 'auth_oidc'), true, true, $authplugin->get_custom_user_profile_fields());
+            get_string('cfg_field_mapping_desc', 'auth_oidc'), true, false, $authplugin->get_custom_user_profile_fields());
     } else {
         auth_oidc_display_auth_lock_options($fieldmappingspage, $authplugin->authtype, $authplugin->userfields,
             get_string('cfg_field_mapping_desc', 'auth_oidc'), true, false, $authplugin->get_custom_user_profile_fields());
