@@ -618,13 +618,11 @@ class authcode extends base {
             $username = trim(\core_text::strtolower($username));
             $tokenrec = $this->createtoken($oidcuniqid, $username, $authparams, $tokenparams, $idtoken, 0, $originalupn);
             $userinfo = $this->get_userinfo($username);
-            error_log("Userinfo: " . print_r($userinfo, true));
             if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
                 $existinguserparams = ['email' => $userinfo['email'], 'mnethostid' => $CFG->mnet_localhost_id];
             } else {
                 $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
             }
-            error_log("ExistingUserParams: " . print_r($existinguserparams, true));
             if ($DB->record_exists('user', $existinguserparams) !== true) {
                 // User does not exist. Create user if site allows, otherwise fail.
                 if (empty($CFG->authpreventaccountcreation)) {
@@ -634,7 +632,6 @@ class authcode extends base {
                             throw new moodle_exception('errorauthloginfaileddupemail', 'auth_oidc', null, null, '1');
                         }
                     }
-                    error_log("Creating new user");
                     $user = create_user_record($username, null, 'oidc');
                 } else {
                     // Trigger login failed event.
@@ -648,13 +645,11 @@ class authcode extends base {
             if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
                 // Here we know there is atleast 1 account with that email.
                 // We can just get the first match which is safe as long as allowaccountssameemail is off.
-                $username = $DB->get_field('user', 'username', ['email' => $userinfo['email']]);
-            }
-            // Before we can authenticate, we need to ensure the user is authing against OIDC.
-            // This ensures we are routed to the correct login handler.
-            $authfields = ['username' => $username, 'auth' => 'oidc'];
-            if (!$DB->record_exists('user', $authfields) !== true) {
-                user_update_user($authfields); 
+                $founduser = $DB->get_record('user', ['email' => $userinfo['email']]);
+                // Before proceeding, set the user to OIDC if they aren't already.
+                $founduser->auth = 'oidc';
+                user_update_user($founduser);
+                $username = $founduser->username;
             }
             $user = authenticate_user_login($username, null, true);
 
