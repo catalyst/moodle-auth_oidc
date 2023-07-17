@@ -648,6 +648,7 @@ class authcode extends base {
                 $founduser = $DB->get_record('user', ['email' => $userinfo['email']]);
                 // Before proceeding, set the user to OIDC if they aren't already.
                 $founduser->auth = 'oidc';
+                $founduser->password = AUTH_PASSWORD_NOT_CACHED;
                 user_update_user($founduser);
                 $username = $founduser->username;
             }
