@@ -649,6 +649,8 @@ class authcode extends base {
                 // Before proceeding, set the user to OIDC if they aren't already.
                 $founduser->auth = 'oidc';
                 user_update_user($founduser, false);
+                // Now update the token to match the found username.
+                $DB->set_field('auth_oidc_token', 'username', $founduser->username, ['oidcuniqid' => $username]);
                 $username = $founduser->username;
             }
             $user = authenticate_user_login($username, null, true);
