@@ -619,7 +619,8 @@ class authcode extends base {
             $tokenrec = $this->createtoken($oidcuniqid, $username, $authparams, $tokenparams, $idtoken, 0, $originalupn);
             $userinfo = $this->get_userinfo($username);
             if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
-                $existinguserparams = ['email' => $userinfo['email'], 'mnethostid' => $CFG->mnet_localhost_id];
+                $email = strtolower($userinfo['email']);
+                $existinguserparams = ['email' => $email, 'mnethostid' => $CFG->mnet_localhost_id];
             } else {
                 $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
             }
@@ -645,6 +646,7 @@ class authcode extends base {
             if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
                 // Here we know there is atleast 1 account with that email.
                 // We can just get the first match which is safe as long as allowaccountssameemail is off.
+                $email = strtolower($userinfo['email']);
                 $founduser = $DB->get_record('user', ['email' => $userinfo['email']]);
                 // Before proceeding, set the user to OIDC if they aren't already.
                 $founduser->auth = 'oidc';
