@@ -647,7 +647,7 @@ class authcode extends base {
                 // Here we know there is atleast 1 account with that email.
                 // We can just get the first match which is safe as long as allowaccountssameemail is off.
                 $email = strtolower($userinfo['email']);
-                $founduser = $DB->get_record('user', ['email' => $email]);
+                $founduser = $DB->get_record('user', ['email' => $userinfo['email']]);
                 // Before proceeding, set the user to OIDC if they aren't already.
                 $founduser->auth = 'oidc';
                 user_update_user($founduser, false);
