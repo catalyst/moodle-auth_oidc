@@ -266,11 +266,13 @@ class base {
                             }
                         }
                     }
-                    $userdata['email'] = strtolower($userdata['email']);
                 }
             }
 
             $updateduser = static::apply_configured_fieldmap_from_token($userdata, $eventtype, $token);
+            if (!empty($userdata['email'])) {
+                $userdata['email'] = strtolower($userdata['email']);
+            }
             $userinfo = (array)$updateduser;
         }
 
