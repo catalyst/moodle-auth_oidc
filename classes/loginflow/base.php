@@ -266,6 +266,7 @@ class base {
                             }
                         }
                     }
+                    $userdata['email'] = strtolower($userdata['email']);
                 }
             }
 
