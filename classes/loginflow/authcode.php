@@ -628,9 +628,11 @@ class authcode extends base {
                 // User does not exist. Create user if site allows, otherwise fail.
                 if (empty($CFG->authpreventaccountcreation)) {
                     if (!$CFG->allowaccountssameemail) {
-                        if (array_key_exists('email', $userinfo)
-                            && ($DB->count_records('user', array('email' => $userinfo['email'], 'deleted' => 0)) > 0)) {
-                            throw new moodle_exception('errorauthloginfaileddupemail', 'auth_oidc', null, null, '1');
+                        if (array_key_exists('email', $userinfo)) {
+                            $email = strtolower($userinfo['email']);
+                            if ($DB->count_records('user', array('email' => $email, 'deleted' => 0)) > 0) {
+                                throw new moodle_exception('errorauthloginfaileddupemail', 'auth_oidc', null, null, '1');
+                            }
                         }
                     }
                     $user = create_user_record($username, null, 'oidc');
