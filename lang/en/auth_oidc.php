@@ -329,3 +329,7 @@ $string['settings_fieldmap_field_sds_student_graduationYear'] = 'SDS student gra
 $string['settings_fieldmap_field_sds_student_studentNumber'] = 'SDS student number';
 $string['settings_fieldmap_field_sds_teacher_externalId'] = 'SDS teacher external ID';
 $string['settings_fieldmap_field_sds_teacher_teacherNumber'] = 'SDS teacher number';
+
+// Custom strings
+$string['subjectmapping'] = 'User matching attribute';
+$string['subjectmapping_desc'] = 'Select the user attribute in the platform to match against the incoming claim. Email will be matched to the \'email\' field in the claim. Username and ID Number will be matched to the subject field in the claim.';

@@ -618,11 +618,28 @@ class authcode extends base {
             $username = trim(\core_text::strtolower($username));
             $tokenrec = $this->createtoken($oidcuniqid, $username, $authparams, $tokenparams, $idtoken, 0, $originalupn);
             $userinfo = $this->get_userinfo($username);
-            if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
-                $existinguserparams = ['email' => $userinfo['email'], 'mnethostid' => $CFG->mnet_localhost_id];
-            } else {
-                $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
+            
+            $matchingmethod = get_config('auth_oidc', 'subjectmapping');
+            // Email can only be used when allowaccountssameemail is off.
+            if ($matchingmethod === 'email' && ($CFG->allowaccountssameemail || !array_key_exists('email', $userinfo))) {
+                // Fall back to username in this case.
+                $matchingmethod = 'username';
             }
+            
+            switch ($matchingmethod) {
+                case 'idnumber':
+                    // In this case, we are treating the "username" from OIDC as the idnumber
+                    $existinguserparams = ['idnumber' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
+                    break;
+                case 'email':
+                    $existinguserparams = ['email' => $userinfo['email'], 'mnethostid' => $CFG->mnet_localhost_id];
+                    break;
+                case 'username':
+                default:
+                    $existinguserparams = ['username' => $username, 'mnethostid' => $CFG->mnet_localhost_id];
+                    break;
+            }
+
             if ($DB->record_exists('user', $existinguserparams) !== true) {
                 // User does not exist. Create user if site allows, otherwise fail.
                 if (empty($CFG->authpreventaccountcreation)) {
@@ -642,16 +659,28 @@ class authcode extends base {
                     throw new moodle_exception('errorauthloginfailednouser', 'auth_oidc', null, null, '1');
                 }
             }
-            if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
-                // Here we know there is atleast 1 account with that email.
-                // We can just get the first match which is safe as long as allowaccountssameemail is off.
-                $founduser = $DB->get_record('user', ['email' => $userinfo['email']]);
-                // Before proceeding, set the user to OIDC if they aren't already.
-                $founduser->auth = 'oidc';
-                user_update_user($founduser, false);
-                // Now update the token to match the found username.
-                $DB->set_field('auth_oidc_token', 'username', $founduser->username, ['oidcuniqid' => $username]);
-                $username = $founduser->username;
+            // Ensure user objects are in the right shape for future matching before proceeding.
+            switch ($matchingmethod) {
+                case 'idnumber':
+                    // The user has been created, but we need to make the idnumber bound as well.
+                    $user->auth = 'oidc';
+                    $user->idnumber = $username;
+                    user_update_user($user, false);
+                    break;
+                case 'email':
+                    // We can only match on email if allowaccountssameemail is off.
+                    if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
+                        // Here we know there is atleast 1 account with that email.
+                        // We can just get the first match which is safe as long as allowaccountssameemail is off.
+                        $founduser = $DB->get_record('user', ['email' => $userinfo['email']]);
+                        // Before proceeding, set the user to OIDC if they aren't already.
+                        $founduser->auth = 'oidc';
+                        user_update_user($founduser, false);
+                        // Now update the token to match the found username.
+                        $DB->set_field('auth_oidc_token', 'username', $founduser->username, ['oidcuniqid' => $username]);
+                        $username = $founduser->username;
+                    }
+                    break;
             }
             $user = authenticate_user_login($username, null, true);
 
