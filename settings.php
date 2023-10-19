@@ -227,6 +227,14 @@ if ($hassiteconfig) {
     $fieldmappingspage = new admin_settingpage('auth_oidc_field_mapping', get_string('settings_page_field_mapping', 'auth_oidc'));
     $fieldmappingspage->add(new admin_setting_configcheckbox('auth_oidc/custom_field_mapping',
         get_string('cfg_custom_mapping', 'auth_oidc'), get_string('cfg_custom_mapping_desc', 'auth_oidc'), 0));
+    $options = [
+        'username' => get_string('username'),
+        'email' => get_string('email'),
+        'idnumber' => get_string('idnumber'),
+    ];
+    $fieldmappingspage->add(new admin_setting_configselect('auth_oidc/subjectmapping',
+        get_string('subjectmapping', 'auth_oidc'),
+        get_string('subjectmapping_desc', 'auth_oidc'), 'username', $options));
     $ADMIN->add('oidcfolder', $fieldmappingspage);
 
     // Display locking / mapping of profile fields.
