@@ -231,6 +231,7 @@ if ($hassiteconfig) {
         'username' => get_string('username'),
         'email' => get_string('email'),
         'idnumber' => get_string('idnumber'),
+        'idnumberemail' => get_string('idnumberemail', 'auth_oidc'),
     ];
     $fieldmappingspage->add(new admin_setting_configselect('auth_oidc/subjectmapping',
         get_string('subjectmapping', 'auth_oidc'),

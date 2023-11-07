@@ -332,4 +332,5 @@ $string['settings_fieldmap_field_sds_teacher_teacherNumber'] = 'SDS teacher numb
 
 // Custom strings
 $string['subjectmapping'] = 'User matching attribute';
-$string['subjectmapping_desc'] = 'Select the user attribute in the platform to match against the incoming claim. Email will be matched to the \'email\' field in the claim. Username and ID Number will be matched to the subject field in the claim.';
+$string['subjectmapping_desc'] = 'Select the user attribute in the platform to match against the incoming claim. Email will be matched to the \'email\' field in the claim. Username and ID Number will be matched to the subject field in the claim. The IDNumber  & Email setting will try to infer the shape of the subject field: If an email address is supplied, it will match against the platform email field, otherwise against the user IDNumber.';
+$string['idnumberemail'] = 'IDNumber & Email';
