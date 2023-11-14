@@ -676,6 +676,8 @@ class authcode extends base {
                     $user->idnumber = $username;
                     user_update_user($user, false);
                 }
+                $founduser = $DB->get_record('user', ['idnumber' => $username]);
+                $username = $founduser->username;
             } else if (array_key_exists('email', $existinguserparams)) {
                 // We can only match on email if allowaccountssameemail is off.
                 if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
