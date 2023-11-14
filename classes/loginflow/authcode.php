@@ -670,10 +670,12 @@ class authcode extends base {
             }
             // Ensure user objects are in the right shape for future matching before proceeding.
             if (array_key_exists('idnumber', $existinguserparams)) {
-                // The user has been created, but we need to make the idnumber bound as well.
-                $user->auth = 'oidc';
-                $user->idnumber = $username;
-                user_update_user($user, false);
+                if (isset($user)) {
+                    // The user has been created, but we need to make the idnumber bound as well.
+                    $user->auth = 'oidc';
+                    $user->idnumber = $username;
+                    user_update_user($user, false);
+                }
             } else if (array_key_exists('email', $existinguserparams)) {
                 // We can only match on email if allowaccountssameemail is off.
                 if (!$CFG->allowaccountssameemail && array_key_exists('email', $userinfo)) {
