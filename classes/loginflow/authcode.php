@@ -677,6 +677,8 @@ class authcode extends base {
                     user_update_user($user, false);
                 }
                 $founduser = $DB->get_record('user', ['idnumber' => $username]);
+                // Now update the token to match the found username.
+                $DB->set_field('auth_oidc_token', 'username', $founduser->username, ['oidcuniqid' => $username]);
                 $username = $founduser->username;
             } else if (array_key_exists('email', $existinguserparams)) {
                 // We can only match on email if allowaccountssameemail is off.
