@@ -242,6 +242,7 @@ function auth_oidc_get_remote_fields() {
             'givenName' => get_string('settings_fieldmap_field_givenName', 'auth_oidc'),
             'surname' => get_string('settings_fieldmap_field_surname', 'auth_oidc'),
             'mail' => get_string('settings_fieldmap_field_mail', 'auth_oidc'),
+            'onPremisesSamAccountName' => get_string('settings_fieldmap_field_onPremisesSamAccountName', 'auth_oidc'),
             'streetAddress' => get_string('settings_fieldmap_field_streetAddress', 'auth_oidc'),
             'city' => get_string('settings_fieldmap_field_city', 'auth_oidc'),
             'postalCode' => get_string('settings_fieldmap_field_postalCode', 'auth_oidc'),
@@ -479,10 +480,10 @@ function auth_oidc_display_auth_lock_options($settings, $auth, $userfields, $hel
             // Mapping.
             if ($field == 'email') {
                 $settings->add(new admin_setting_configselect("auth_oidc/field_map_{$field}",
-                    get_string('auth_fieldmapping', 'auth', $fieldname), '', null, $emailremotefields));
+                    get_string('auth_fieldmapping', 'auth', $fieldname), '', 'mail', $emailremotefields));
             } else {
                 $settings->add(new admin_setting_configselect("auth_oidc/field_map_{$field}",
-                    get_string('auth_fieldmapping', 'auth', $fieldname), '', null, $remotefields));
+                    get_string('auth_fieldmapping', 'auth', $fieldname), '', '', $remotefields));
             }
 
             // Update local.
@@ -558,9 +559,7 @@ function auth_oidc_config_name_in_form(string $stringid) {
  */
 function auth_oidc_is_setup_complete() {
     $pluginconfig = get_config('auth_oidc');
-    if (empty($pluginconfig->clientid) || empty($pluginconfig->idptype) || empty($pluginconfig->clientauthmethod) ||
-        (in_array($pluginconfig->idptype, [AUTH_OIDC_IDP_TYPE_AZURE_AD, AUTH_OIDC_IDP_TYPE_MICROSOFT]) &&
-            empty($pluginconfig->tenantnameorguid))) {
+    if (empty($pluginconfig->clientid) || empty($pluginconfig->idptype) || empty($pluginconfig->clientauthmethod)) {
         return false;
     }
 

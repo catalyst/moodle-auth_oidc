@@ -55,7 +55,7 @@ $oidcconfig = get_config('auth_oidc');
 $form = new application(null, ['oidcconfig' => $oidcconfig]);
 
 $formdata = [];
-foreach (['idptype', 'clientid', 'clientauthmethod', 'clientsecret', 'clientprivatekey', 'clientcert', 'tenantnameorguid',
+foreach (['idptype', 'clientid', 'clientauthmethod', 'clientsecret', 'clientprivatekey', 'clientcert',
     'authendpoint', 'tokenendpoint', 'oidcresource', 'oidcscope'] as $field) {
     if (isset($oidcconfig->$field)) {
         $formdata[$field] = $oidcconfig->$field;
@@ -73,7 +73,7 @@ if ($form->is_cancelled()) {
     }
 
     // Prepare config settings to save.
-    $configstosave = ['idptype', 'clientid', 'tenantnameorguid', 'clientauthmethod', 'authendpoint', 'tokenendpoint',
+    $configstosave = ['idptype', 'clientid', 'clientauthmethod', 'authendpoint', 'tokenendpoint',
         'oidcresource', 'oidcscope'];
 
     // Depending on the value of clientauthmethod, save clientsecret or (clientprivatekey and clientcert).
@@ -97,11 +97,24 @@ if ($form->is_cancelled()) {
     }
 
     // Redirect message depend on IdP type.
-    if ($fromform->idptype == AUTH_OIDC_IDP_TYPE_OTHER) {
-        redirect($url, get_string('application_updated', 'auth_oidc'));
-    } else {
+    $showprovideadminconsentnotification = false;
+
+    if ($fromform->idptype != AUTH_OIDC_IDP_TYPE_OTHER) {
+        if (auth_oidc_is_local_365_installed()) {
+            require_once($CFG->dirroot . '/local/o365/classes/utils.php');
+            if (method_exists('\local_o365\utils', 'is_connected')) {
+                if (\local_o365\utils::is_connected()) {
+                    $showprovideadminconsentnotification = true;
+                }
+            }
+        }
+    }
+
+    if ($showprovideadminconsentnotification) {
         $localo365configurl = new moodle_url('/admin/settings.php', ['section' => 'local_o365']);
         redirect($url, get_string('application_updated_azure', 'auth_oidc', $localo365configurl->out()));
+    } else {
+        redirect($url, get_string('application_updated', 'auth_oidc'));
     }
 }
 
