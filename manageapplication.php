@@ -38,7 +38,7 @@ $PAGE->set_pagelayout('admin');
 $PAGE->set_heading(get_string('settings_page_application', 'auth_oidc'));
 $PAGE->set_title(get_string('settings_page_application', 'auth_oidc'));
 
-$jsparams = [AUTH_OIDC_IDP_TYPE_MICROSOFT, AUTH_OIDC_AUTH_METHOD_SECRET, AUTH_OIDC_AUTH_METHOD_CERTIFICATE,
+$jsparams = [AUTH_OIDC_IDP_TYPE_MICROSOFT_IDENTITY_PLATFORM, AUTH_OIDC_AUTH_METHOD_SECRET, AUTH_OIDC_AUTH_METHOD_CERTIFICATE,
     get_string('auth_method_certificate', 'auth_oidc')];
 $jsmodule = [
     'name' => 'auth_oidc',
@@ -55,8 +55,9 @@ $oidcconfig = get_config('auth_oidc');
 $form = new application(null, ['oidcconfig' => $oidcconfig]);
 
 $formdata = [];
-foreach (['idptype', 'clientid', 'clientauthmethod', 'clientsecret', 'clientprivatekey', 'clientcert', 'tenantnameorguid',
-    'authendpoint', 'tokenendpoint', 'oidcresource', 'oidcscope'] as $field) {
+foreach (['idptype', 'clientid', 'clientauthmethod', 'clientsecret', 'clientprivatekey', 'clientcert',
+    'clientcertsource', 'clientprivatekeyfile', 'clientcertfile', 'clientcertpassphrase',
+    'authendpoint', 'tokenendpoint', 'oidcresource', 'oidcscope', 'secretexpiryrecipients'] as $field) {
     if (isset($oidcconfig->$field)) {
         $formdata[$field] = $oidcconfig->$field;
     }
@@ -73,35 +74,71 @@ if ($form->is_cancelled()) {
     }
 
     // Prepare config settings to save.
-    $configstosave = ['idptype', 'clientid', 'tenantnameorguid', 'clientauthmethod', 'authendpoint', 'tokenendpoint',
+    $configstosave = ['idptype', 'clientid', 'clientauthmethod', 'authendpoint', 'tokenendpoint',
         'oidcresource', 'oidcscope'];
 
     // Depending on the value of clientauthmethod, save clientsecret or (clientprivatekey and clientcert).
     switch ($fromform->clientauthmethod) {
         case AUTH_OIDC_AUTH_METHOD_SECRET:
             $configstosave[] = 'clientsecret';
+            $configstosave[] = 'secretexpiryrecipients';
             break;
         case AUTH_OIDC_AUTH_METHOD_CERTIFICATE:
-            $configstosave[] = 'clientprivatekey';
-            $configstosave[] = 'clientcert';
+            $configstosave[] = 'clientcertsource';
+            $configstosave[] = 'clientcertpassphrase';
+            switch ($fromform->clientcertsource) {
+                case AUTH_OIDC_AUTH_CERT_SOURCE_TEXT:
+                    $configstosave[] = 'clientprivatekey';
+                    $configstosave[] = 'clientcert';
+                    break;
+                case AUTH_OIDC_AUTH_CERT_SOURCE_FILE:
+                    $configstosave[] = 'clientprivatekeyfile';
+                    $configstosave[] = 'clientcertfile';
+                    break;
+            }
             break;
     }
 
     // Save config settings.
+    $updateapplicationtokenrequired = false;
+    $settingschanged = false;
     foreach ($configstosave as $config) {
         $existingsetting = get_config('auth_oidc', $config);
         if ($fromform->$config != $existingsetting) {
             set_config($config, $fromform->$config, 'auth_oidc');
             add_to_config_log($config, $existingsetting, $fromform->$config, 'auth_oidc');
+            $settingschanged = true;
+            if ($config != 'secretexpiryrecipients') {
+                $updateapplicationtokenrequired = true;
+            }
         }
     }
 
-    // Redirect message depend on IdP type.
-    if ($fromform->idptype == AUTH_OIDC_IDP_TYPE_OTHER) {
+    // Redirect destination and message depend on IdP type.
+    $isgraphapiconnected = false;
+    if ($fromform->idptype != AUTH_OIDC_IDP_TYPE_OTHER) {
+        if (auth_oidc_is_local_365_installed()) {
+            $isgraphapiconnected = true;
+        }
+    }
+
+    if ($updateapplicationtokenrequired) {
+        if ($isgraphapiconnected) {
+            // First, delete the existing application token and purge cache.
+            unset_config('apptokens', 'local_o365');
+            unset_config('azuresetupresult', 'local_o365');
+            purge_all_caches();
+
+            // Then show the message to the user with instructions to update the application token.
+            $localo365configurl = new moodle_url('/admin/settings.php', ['section' => 'local_o365']);
+            redirect($localo365configurl, get_string('application_updated_microsoft', 'auth_oidc'));
+        } else {
+            redirect($url, get_string('application_updated', 'auth_oidc'));
+        }
+    } else if ($settingschanged) {
         redirect($url, get_string('application_updated', 'auth_oidc'));
     } else {
-        $localo365configurl = new moodle_url('/admin/settings.php', ['section' => 'local_o365']);
-        redirect($url, get_string('application_updated_azure', 'auth_oidc', $localo365configurl->out()));
+        redirect($url, get_string('application_not_changed', 'auth_oidc'));
     }
 }
 

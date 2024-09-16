@@ -28,7 +28,9 @@ namespace auth_oidc\loginflow;
 
 use auth_oidc\jwt;
 use auth_oidc\oidcclient;
+use auth_oidc\utils;
 use core_user;
+use moodle_exception;
 use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
@@ -122,22 +124,28 @@ class base {
         if (auth_oidc_is_local_365_installed()) {
             // Check if multi tenants is enabled. User from additional tenants can only sync fields from token.
             $userfromadditionaltenant = false;
-            $hostingtenantid = get_config('local_o365', 'aadtenantid');
+            $hostingtenantid = get_config('local_o365', 'microsofttenantid');
             $token = jwt::instance_from_encoded($tokenrec->token);
             if ($token->claim('tid') != $hostingtenantid) {
                 $userfromadditionaltenant = true;
             }
 
             if (!$userfromadditionaltenant) {
+                $userdatafetchedfromgraph = false;
                 if (\local_o365\feature\usersync\main::fieldmap_require_graph_api_call($eventtype)) {
                     // If local_o365 is installed, and connects to Microsoft Identity Platform (v2.0),
                     // or field mapping uses fields not covered by token, then call Graph API function to get user details.
-                    $apiclient = \local_o365\utils::get_api($tokenrec->userid);
+                    $apiclient = \local_o365\utils::get_api();
                     if ($apiclient) {
                         $fieldmappingfromtoken = false;
-                        $userdata = $apiclient->get_user($tokenrec->oidcuniqid, true);
+                        $userdata = $apiclient->get_user($tokenrec->oidcuniqid);
+                        if ($userdata) {
+                            $userdatafetchedfromgraph = true;
+                        }
                     }
-                } else {
+                }
+
+                if (!$userdatafetchedfromgraph) {
                     // If local_o365 is installed, but all field mapping fields are in token, then use token.
                     $fieldmappingfromtoken = false;
                     // Process both ID token and access tokens.
@@ -148,13 +156,13 @@ class base {
 
                         if (!isset($userdata['objectId'])) {
                             $objectid = $token->claim('oid');
-                            if (!$objectid) {
+                            if (!empty($objectid)) {
                                 $userdata['objectId'] = $objectid;
                             }
                         }
 
                         if (!isset($userdata['userPrincipalName'])) {
-                            if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT) {
+                            if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT_IDENTITY_PLATFORM) {
                                 $upn = $token->claim('preferred_username');
                                 if (empty($upn)) {
                                     $upn = $token->claim('email');
@@ -184,15 +192,15 @@ class base {
                             }
                         }
 
-                        if (!isset($userdata['email'])) {
+                        if (!isset($userdata['mail'])) {
                             $email = $token->claim('email');
                             if (!empty($email)) {
                                 $userdata['mail'] = $email;
                             } else {
                                 if (!empty($upn)) {
-                                    $aademailvalidateresult = filter_var($upn, FILTER_VALIDATE_EMAIL);
-                                    if (!empty($aademailvalidateresult)) {
-                                        $userdata['mail'] = $aademailvalidateresult;
+                                    $entraidemailvalidateresult = filter_var($upn, FILTER_VALIDATE_EMAIL);
+                                    if (!empty($entraidemailvalidateresult)) {
+                                        $userdata['mail'] = $entraidemailvalidateresult;
                                     }
                                 }
                             }
@@ -214,17 +222,26 @@ class base {
             $tokenames = ['idtoken', 'token'];
 
             foreach ($tokenames as $tokename) {
-                $token = jwt::instance_from_encoded($tokenrec->$tokename);
+                try {
+                    $token = jwt::instance_from_encoded($tokenrec->$tokename);
+                } catch (moodle_exception $e) {
+                    // Error occurred when decoding a token, skip.
+                    continue;
+                }
 
                 if (!isset($userdata['objectId'])) {
+                    // Use 'oid' if available (Microsoft-specific), or fall back to standard "sub" claim.
                     $objectid = $token->claim('oid');
-                    if (!$objectid) {
+                    if (empty($objectid)) {
+                        $objectid = $token->claim('sub');
+                    }
+                    if (!empty($objectid)) {
                         $userdata['objectId'] = $objectid;
                     }
                 }
 
                 if (!isset($userdata['userPrincipalName'])) {
-                    if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT) {
+                    if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT_IDENTITY_PLATFORM) {
                         $upn = $token->claim('preferred_username');
                         if (empty($upn)) {
                             $upn = $token->claim('email');
@@ -254,15 +271,15 @@ class base {
                     }
                 }
 
-                if (!isset($userdata['email'])) {
+                if (!isset($userdata['mail'])) {
                     $email = $token->claim('email');
                     if (!empty($email)) {
                         $userdata['mail'] = $email;
                     } else {
                         if (!empty($upn)) {
-                            $aademailvalidateresult = filter_var($upn, FILTER_VALIDATE_EMAIL);
-                            if (!empty($aademailvalidateresult)) {
-                                $userdata['mail'] = $aademailvalidateresult;
+                            $entraidemailvalidateresult = filter_var($upn, FILTER_VALIDATE_EMAIL);
+                            if (!empty($entraidemailvalidateresult)) {
+                                $userdata['mail'] = $entraidemailvalidateresult;
                             }
                         }
                     }
@@ -376,7 +393,7 @@ class base {
 
             // We need either the user's previous method or the manual login plugin to be enabled for disconnection.
             if (empty($prevauthmethod) && is_enabled_auth('manual') !== true) {
-                throw new \moodle_exception('errornodisconnectionauthmethod', 'auth_oidc');
+                throw new moodle_exception('errornodisconnectionauthmethod', 'auth_oidc');
             }
 
             // Check to see if the user has a username created by OIDC, or a self-created username.
@@ -399,18 +416,18 @@ class base {
             } else if ($fromform = $mform->get_data()) {
                 if (empty($fromform->newmethod) || ($fromform->newmethod !== $prevauthmethod &&
                         $fromform->newmethod !== 'manual')) {
-                    throw new \moodle_exception('errorauthdisconnectinvalidmethod', 'auth_oidc');
+                    throw new moodle_exception('errorauthdisconnectinvalidmethod', 'auth_oidc');
                 }
 
                 $updateduser = new stdClass;
 
                 if ($fromform->newmethod === 'manual') {
                     if (empty($fromform->password)) {
-                        throw new \moodle_exception('errorauthdisconnectemptypassword', 'auth_oidc');
+                        throw new moodle_exception('errorauthdisconnectemptypassword', 'auth_oidc');
                     }
                     if ($customdata['canchooseusername'] === true) {
                         if (empty($fromform->username)) {
-                            throw new \moodle_exception('errorauthdisconnectemptyusername', 'auth_oidc');
+                            throw new moodle_exception('errorauthdisconnectemptyusername', 'auth_oidc');
                         }
 
                         if (strtolower($fromform->username) !== $userrec->username) {
@@ -419,7 +436,7 @@ class base {
                             if ($DB->record_exists('user', $usercheck) === false) {
                                 $updateduser->username = $newusername;
                             } else {
-                                throw new \moodle_exception('errorauthdisconnectusernameexists', 'auth_oidc');
+                                throw new moodle_exception('errorauthdisconnectusernameexists', 'auth_oidc');
                             }
                         }
                     }
@@ -440,8 +457,8 @@ class base {
                 $updateduser->id = $userrec->id;
                 try {
                     user_update_user($updateduser);
-                } catch (\Exception $e) {
-                    throw new \moodle_exception($e->errorcode, '', $selfurl);
+                } catch (moodle_exception $e) {
+                    throw new moodle_exception($e->errorcode, '', $selfurl);
                 }
 
                 // Delete token data.
@@ -492,7 +509,7 @@ class base {
         }
 
         if (!auth_oidc_is_setup_complete()) {
-            throw new \moodle_exception('errorauthnocredsandendpoints', 'auth_oidc');
+            throw new moodle_exception('errorauthnocredsandendpoints', 'auth_oidc');
         }
 
         $clientid = (isset($this->config->clientid)) ? $this->config->clientid : null;
@@ -522,16 +539,16 @@ class base {
         $idtoken = jwt::instance_from_encoded($idtoken);
         $sub = $idtoken->claim('sub');
         if (empty($sub)) {
-            \auth_oidc\utils::debug('Invalid idtoken', 'base::process_idtoken', $idtoken);
-            throw new \moodle_exception('errorauthinvalididtoken', 'auth_oidc');
+            utils::debug('Invalid idtoken', __METHOD__, $idtoken);
+            throw new moodle_exception('errorauthinvalididtoken', 'auth_oidc');
         }
         $receivednonce = $idtoken->claim('nonce');
         if (!empty($orignonce) && (empty($receivednonce) || $receivednonce !== $orignonce)) {
-            \auth_oidc\utils::debug('Invalid nonce', 'base::process_idtoken', $idtoken);
-            throw new \moodle_exception('errorauthinvalididtoken', 'auth_oidc');
+            utils::debug('Invalid nonce', __METHOD__, $idtoken);
+            throw new moodle_exception('errorauthinvalididtoken', 'auth_oidc');
         }
 
-        // Use 'oid' if available (Azure-specific), or fall back to standard "sub" claim.
+        // Use 'oid' if available (Microsoft-specific), or fall back to standard "sub" claim.
         $oidcuniqid = $idtoken->claim('oid');
         if (empty($oidcuniqid)) {
             $oidcuniqid = $idtoken->claim('sub');
@@ -555,7 +572,7 @@ class base {
         if ($restrictions !== '') {
             $restrictions = explode("\n", $restrictions);
             // Check main user identifier claim based on IdP type, and falls back to oidc-standard "sub" if still empty.
-            if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT) {
+            if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT_IDENTITY_PLATFORM) {
                 $tomatch = $idtoken->claim('preferred_username');
                 if (empty($tomatch)) {
                     $tomatch = $idtoken->claim('email');
@@ -585,13 +602,13 @@ class base {
                             $userpassed = true;
                             break;
                         }
-                    } catch (\Exception $e) {
+                    } catch (moodle_exception $e) {
                         $debugdata = [
                             'exception' => $e,
                             'restriction' => $restriction,
                             'tomatch' => $tomatch,
                         ];
-                        \auth_oidc\utils::debug('Error running user restrictions.', 'handleauthresponse', $debugdata);
+                        utils::debug('Error running user restrictions.', __METHOD__, $debugdata);
                     }
                     $contents = ob_get_contents();
                     ob_end_clean();
@@ -601,7 +618,7 @@ class base {
                             'restriction' => $restriction,
                             'tomatch' => $tomatch,
                         ];
-                        \auth_oidc\utils::debug('Output while running user restrictions.', 'handleauthresponse', $debugdata);
+                        utils::debug('Output while running user restrictions.', __METHOD__, $debugdata);
                     }
                 }
             }
@@ -629,7 +646,7 @@ class base {
             $oidcusername = $originalupn;
         } else {
             // Determine remote username depending on IdP type, or fall back to standard 'sub'.
-            if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT) {
+            if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT_IDENTITY_PLATFORM) {
                 $oidcusername = $idtoken->claim('preferred_username');
                 if (empty($oidcusername)) {
                     $oidcusername = $idtoken->claim('email');
@@ -648,7 +665,7 @@ class base {
 
         // We should not fail here (idtoken was verified earlier to at least contain 'sub', but just in case...).
         if (empty($oidcusername)) {
-            throw new \moodle_exception('errorauthinvalididtoken', 'auth_oidc');
+            throw new moodle_exception('errorauthinvalididtoken', 'auth_oidc');
         }
 
         // Cleanup old invalid token with the same oidcusername.
