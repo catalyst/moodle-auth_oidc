@@ -15,34 +15,39 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Single Sign Out end point.
+ * Change binding username claim tool form 2.
  *
  * @package auth_oidc
  * @author Lai Wei <lai.wei@enovation.ie>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @copyright (C) 2014 onwards Microsoft, Inc. (http://microsoft.com/)
+ * @copyright (C) 2023 onwards Microsoft, Inc. (http://microsoft.com/)
  */
 
-// phpcs:ignore moodle.Files.RequireLogin.Missing
-require_once(__DIR__ . '/../../config.php');
+namespace auth_oidc\form;
 
-$PAGE->set_url('/auth/oidc/logout.php');
-$PAGE->set_context(context_system::instance());
+use moodleform;
 
-$sid = optional_param('sid', '', PARAM_TEXT);
+/**
+ * Class change_binding_username_claim_tool_form2 represents the form on the change binding username claim tool page.
+ */
+class change_binding_username_claim_tool_form2 extends moodleform {
+    /**
+     * Form definition.
+     *
+     * @return void
+     */
+    public function definition() {
+        $mform =& $this->_form;
+        $data = $this->_customdata['data'];
 
-if ($sid) {
-    if ($authoidctokenrecord = $DB->get_record('auth_oidc_token', ['sid' => $sid])) {
-        if ($authoidctokenrecord->userid == $USER->id) {
-            $authsequence = get_enabled_auth_plugins(); // Auths, in sequence.
-            foreach ($authsequence as $authname) {
-                $authplugin = get_auth_plugin($authname);
-                $authplugin->logoutpage_hook();
-            }
+        $mform->addElement('hidden', 'iid');
+        $mform->setType('iid', PARAM_INT);
 
-            require_logout();
-        }
+        $mform->addElement('hidden', 'previewrows');
+        $mform->setType('previewrows', PARAM_INT);
+
+        $this->add_action_buttons(true, get_string('upload_usernames', 'auth_oidc'));
+
+        $this->set_data($data);
     }
 }
-
-die();
