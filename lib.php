@@ -697,43 +697,6 @@ function auth_oidc_get_client_auth_method_name() {
 }
 
 /**
- * Check if we have the oidc=1 param set. If so, disable guest access and force the user to log in with oidc.
- *
- * @return void
- */
-function auth_oidc_after_config() {
-    global $CFG, $PAGE, $FULLME, $SESSION;
-    try {
-        $oidc = optional_param('oidc', 0, PARAM_BOOL);
-        if ($oidc == 1) {
-            if (isguestuser()) {
-                // We want to force users to log in with a real account, so log guest users out.
-                require_logout();
-            }
-            // We have the oidc=1 param set. Disable guest access (in memory -
-            // not saved in database) to force the login with oidc for this request.
-            unset($CFG->autologinguests);
-
-            // Set the return URL.
-            if ($url = qualified_me()) {
-                $wantsurl = new moodle_url($url);
-                $wantsurl->remove_params('oidc');
-                $SESSION->wantsurl = $wantsurl->out(false);
-            }
-
-            // Force the redirect to login.
-            redirect(new \moodle_url('/auth/oidc/'));
-            die;
-        }
-    } catch (\Exception $exception) {
-        // @codingStandardsIgnoreStart
-        // We never want this to throw a real exception. But log the error.
-        error_log('auth_oidc_after_config error! ' . $exception->getTraceAsString());
-        // @codingStandardsIgnoreEnd
-    }
-}
-
-/**
  * Return the name of the configured binding username claim.
  *
  * @return string
