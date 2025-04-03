@@ -205,7 +205,7 @@ class provider implements
         $tables = [
             'auth_oidc_prevlogin' => ['userid' => $user->id],
             'auth_oidc_token' => ['userid' => $user->id],
-            'auth_oidc_sid' => ['userid' => $user->id],       
+            'auth_oidc_sid' => ['userid' => $user->id],
         ];
         return $tables;
     }
