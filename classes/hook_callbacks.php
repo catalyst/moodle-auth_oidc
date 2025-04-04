@@ -47,7 +47,7 @@ class hook_callbacks {
 
                 // Set the return URL.
                 if ($url = qualified_me()) {
-                    $wantsurl = new moodle_url($url);
+                    $wantsurl = new \moodle_url($url);
                     $wantsurl->remove_params('oidc');
                     $SESSION->wantsurl = $wantsurl->out(false);
                 }
