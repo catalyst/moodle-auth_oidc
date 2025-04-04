@@ -54,8 +54,8 @@ $string['heading_debugging_desc'] = '';
 $string['idptype'] = 'Identity Provider (IdP) Type';
 $string['idptype_help'] = 'Three types of IdP are currently supported:
 <ul>
-<li><b>Microsoft Entra ID (v1.0)</b>: Microsoft Entra ID with oauth2 v1.0 endpoints, e.g. https://login.microsoftonline.com/common/oauth2/authorize.</li>
-<li><b>Microsoft identity platform (v2.0)</b>: Microsoft Entra ID with oath2 v2.0 endpoints, e.g. https://login.microsoftonline.com/common/oauth2/v2.0/authorize.</li>
+<li><b>Microsoft Entra ID (v1.0)</b>: Microsoft Entra ID with oauth2 v1.0 endpoints, e.g. https://login.microsoftonline.com/organizations/oauth2/authorize.</li>
+<li><b>Microsoft identity platform (v2.0)</b>: Microsoft Entra ID with oath2 v2.0 endpoints, e.g. https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize.</li>
 <li><b>Other</b>: any non Microsoft IdP.</li>
 </ul>
 The differences between <b>Microsoft Entra ID (v1.0)</b> and <b>Microsoft identity platform (v2.0)</b> options can be found at <a href="https://docs.microsoft.com/en-us/azure/active-directory/azuread-dev/azure-ad-endpoint-comparison">https://docs.microsoft.com/en-us/azure/active-directory/azuread-dev/azure-ad-endpoint-comparison</a>.<br/>
@@ -207,6 +207,7 @@ $string['application_not_changed'] = 'OpenID Connect application setting was not
 $string['event_debug'] = 'Debug message';
 
 $string['task_cleanup_oidc_state_and_token'] = 'Clean up OIDC state and invalid token';
+$string['task_cleanup_oidc_sid'] = 'Clean up OIDC SID records';
 
 $string['errorauthdisconnectemptypassword'] = 'Password cannot be empty';
 $string['errorauthdisconnectemptyusername'] = 'Username cannot be empty';
@@ -259,13 +260,13 @@ $string['error_empty_client_cert_file'] = 'Client certificate public key file ca
 $string['error_empty_tenantname_or_guid'] = 'Tenant name or GUID cannot be empty when using "certificate" authentication method';
 $string['error_endpoint_mismatch_auth_endpoint'] = 'The configured authorization endpoint does not match configured IdP type.<br/>
 <ul>
-<li>When using "Microsoft Entra ID (v1.0)" IdP type, use v1.0 endpoint, e.g. https://login.microsoftonline.com/common/oauth2/authorize</li>
-<li>When using "Microsoft identity platform (v2.0)" IdP type, use v2.0 endpoint, e.g. https://login.microsoftonline.com/common/oauth2/v2.0/authorize</li>
+<li>When using "Microsoft Entra ID (v1.0)" IdP type, use v1.0 endpoint, e.g. https://login.microsoftonline.com/organizations/oauth2/authorize</li>
+<li>When using "Microsoft identity platform (v2.0)" IdP type, use v2.0 endpoint, e.g. https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize</li>
 </ul>';
 $string['error_endpoint_mismatch_token_endpoint'] = 'The configured token endpoint does not match configured IdP type.<br/>
 <ul>
-<li>When using "Microsoft Entra ID (v1.0)" IdP type, use v1.0 endpoint, e.g. https://login.microsoftonline.com/common/oauth2/token</li>
-<li>When using "Microsoft identity platform (v2.0)" IdP type, use v2.0 endpoint, e.g. https://login.microsoftonline.com/common/oauth2/v2.0/authorize</li>
+<li>When using "Microsoft Entra ID (v1.0)" IdP type, use v1.0 endpoint, e.g. https://login.microsoftonline.com/organizations/oauth2/token</li>
+<li>When using "Microsoft identity platform (v2.0)" IdP type, use v2.0 endpoint, e.g. https://login.microsoftonline.com/organizations/oauth2/v2.0/token</li>
 </ul>';
 $string['error_tenant_specific_endpoint_required'] = 'When using "Microsoft identity platform (v2.0)" IdP type and "Certificate" authentication method, tenant specific endpoint (i.e. not common/organizations/consumers) is required.';
 $string['error_empty_oidcresource'] = 'Resource cannot be empty when using Microsoft Entra ID (v1.0) or other types of IdP.';
@@ -405,7 +406,7 @@ $string['binding_username_claim_description_existing_claims'] = 'The following c
 <div class="existing_claims">{$a}</div>';
 $string['binding_username_auto'] = 'Choose automatically';
 $string['binding_username_custom'] = 'Custom';
-$string['binding_username_claim'] = 'Binding username claim';
+$string['bindingusernameclaim'] = 'Binding username claim';
 $string['customclaimname'] = 'Custom claim name';
 $string['customclaimname_description'] = 'This field is used only when the <b>Binding Username Claim</b> setting is set to <b>Custom</b>.';
 $string['binding_username_claim_help_ms_no_user_sync'] = 'The options for non Microsoft IdPs include:

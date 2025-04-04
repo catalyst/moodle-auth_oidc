@@ -28,6 +28,7 @@ namespace auth_oidc;
 use Exception;
 use moodle_exception;
 use auth_oidc\event\action_failed;
+use moodle_url;
 
 /**
  * General purpose utility class.
@@ -52,6 +53,18 @@ class utils {
             $errmsg = 'Error response received.';
             self::debug($errmsg, __METHOD__, $result);
             if (isset($result['error_description'])) {
+                $isadminconsent = optional_param('admin_consent', false, PARAM_BOOL);
+                if ($isadminconsent) {
+                    if (get_config('auth_oidc', 'idptype') == AUTH_OIDC_IDP_TYPE_MICROSOFT_IDENTITY_PLATFORM &&
+                        auth_oidc_is_local_365_installed() &&
+                        $result['error'] === 'invalid_grant' &&
+                        isset($result['error_codes']) && count($result['error_codes']) == 1 &&
+                        $result['error_codes'][0] == 53003) {
+                        $localo365configurationpageurl = new moodle_url('/admin/settings.php', ['section' => 'local_o365']);
+                        throw new moodle_exception('settings_adminconsent_error_53003', 'local_o365',
+                            $localo365configurationpageurl, '', $result['error_description']);
+                    }
+                }
                 throw new moodle_exception('erroroidccall_message', 'auth_oidc', '', $result['error_description']);
             } else {
                 throw new moodle_exception('erroroidccall', 'auth_oidc');
@@ -118,18 +131,53 @@ class utils {
     public static function debug($message, $where = '', $debugdata = null) {
         $debugmode = (bool)get_config('auth_oidc', 'debugmode');
         if ($debugmode === true) {
-            $backtrace = debug_backtrace();
-            $otherdata = [
+            $debugbacktrace = debug_backtrace();
+            $debugbacktracechecksum = md5(json_encode($debugbacktrace));
+
+            $otherdata = static::make_json_safe([
                 'other' => [
                     'message' => $message,
                     'where' => $where,
                     'debugdata' => $debugdata,
-                    'backtrace' => $backtrace,
+                    'backtrace_checksum' => $debugbacktracechecksum,
                 ],
-            ];
+            ]);
             $event = action_failed::create($otherdata);
             $event->trigger();
+
+            $debugbacktracedata = [
+                'checksum' => $debugbacktracechecksum,
+                'backtrace' => $debugbacktrace,
+            ];
+
+            debugging(json_encode($debugbacktracedata), DEBUG_DEVELOPER);
         }
+    }
+
+    /**
+     * Make a JSON structure safe for logging.
+     *
+     * @param mixed $data The data to make safe.
+     * @return mixed The safe data.
+     */
+    private static function make_json_safe($data) {
+        if (is_array($data)) {
+            foreach ($data as $key => $value) {
+                $data[$key] = static::make_json_safe($value);
+            }
+        } else if (is_object($data)) {
+            $data = (array)$data;
+            foreach ($data as $key => $value) {
+                $data[$key] = static::make_json_safe($value);
+            }
+        } else if (is_bool($data)) {
+            $data = (int)$data;
+        } else if (is_null($data)) {
+            $data = null;
+        } else if (!is_scalar($data)) {
+            $data = (string)$data;
+        }
+        return $data;
     }
 
     /**
@@ -138,7 +186,7 @@ class utils {
      * @return string The redirect URL.
      */
     public static function get_redirecturl() {
-        $redirecturl = new \moodle_url('/auth/oidc/');
+        $redirecturl = new moodle_url('/auth/oidc/');
         return $redirecturl->out(false);
     }
 
@@ -148,7 +196,7 @@ class utils {
      * @return string The redirect URL.
      */
     public static function get_frontchannellogouturl() {
-        $logouturl = new \moodle_url('/auth/oidc/logout.php');
+        $logouturl = new moodle_url('/auth/oidc/logout.php');
         return $logouturl->out(false);
     }
 
