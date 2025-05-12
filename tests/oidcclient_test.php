@@ -111,8 +111,6 @@ final class oidcclient_test extends \advanced_testcase {
     /**
      * Test setting and getting endpoints.
      *
-     * @param $endpoints
-     * @param $expectedexception
      * @dataProvider dataprovider_endpoints
      * @covers \auth_oidc\tests\mockoidcclient::setendpoints
      * @param array $endpoints
