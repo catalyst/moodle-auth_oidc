@@ -130,7 +130,7 @@ class auth_plugin_oidc extends \auth_plugin_base {
             $oidc = 0;
         }
         if (!$this->config->forceredirect) {
-            return false; // Never redirect if we haven't enabled the forceredirect setting
+            return false; // Never redirect if we haven't enabled the forceredirect setting.
         }
         // Never redirect on POST.
         if (isset($_SERVER['REQUEST_METHOD']) && ($_SERVER['REQUEST_METHOD'] == 'POST')) {
