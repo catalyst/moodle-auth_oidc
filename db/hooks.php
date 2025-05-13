@@ -30,5 +30,5 @@ $callbacks = [
         'hook' => \core\hook\after_config::class,
         'callback' => \auth_oidc\hook_callbacks::class . '::after_config',
         'priority' => 0,
-    ]
+    ],
 ];
