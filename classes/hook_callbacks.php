@@ -27,7 +27,6 @@ use core\hook\after_config;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class hook_callbacks {
-
     /**
      * Check if we have the oidc=1 param set. If so, disable guest access and force the user to log in with oidc.
      * @param after_config $hook
