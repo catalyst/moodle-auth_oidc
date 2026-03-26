@@ -122,9 +122,9 @@ class provider implements
         $contextlist->add_from_sql($sql, $params);
 
         $sql = "SELECT ctx.id
-                  FROM {auth_oidc_sid} si
-                  JOIN {context} ctx ON ctx.instanceid = si.userid AND ctx.contextlevel = :contextlevel
-                 WHERE si.userid = :userid";
+                  FROM {auth_oidc_sid} s
+                  JOIN {context} ctx ON ctx.instanceid = s.userid AND ctx.contextlevel = :contextlevel
+                 WHERE s.userid = :userid";
         $params = ['userid' => $userid, 'contextlevel' => CONTEXT_USER];
         $contextlist->add_from_sql($sql, $params);
 
@@ -165,13 +165,12 @@ class provider implements
         $userlist->add_from_sql('userid', $sql, $params);
 
         $sql = "SELECT ctx.instanceid as userid
-                  FROM {auth_oidc_sid} si
+                  FROM {auth_oidc_sid} s
                   JOIN {context} ctx
-                       ON ctx.instanceid = si.userid
+                       ON ctx.instanceid = s.userid
                        AND ctx.contextlevel = :contextuser
                  WHERE ctx.id = :contextid";
         $userlist->add_from_sql('userid', $sql, $params);
-
     }
 
     /**
