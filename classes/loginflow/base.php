@@ -700,6 +700,7 @@ class base {
             $tokenrec->expiry = time() + DAYSECS;
         }
         $tokenrec->refreshtoken = !empty($tokenparams['refresh_token']) ? $tokenparams['refresh_token'] : ''; // TBD?
+        $tokenrec->token = !empty($tokenparams['token']) ? $tokenparams['token'] : '';
         $tokenrec->idtoken = $tokenparams['id_token'];
         $tokenrec->id = $DB->insert_record('auth_oidc_token', $tokenrec);
         return $tokenrec;
@@ -726,6 +727,7 @@ class base {
             $tokenrec->expiry = time() + DAYSECS;
         }
         $tokenrec->refreshtoken = !empty($tokenparams['refresh_token']) ? $tokenparams['refresh_token'] : ''; // TBD?
+        $tokenrec->token = !empty($tokenparams['token']) ? $tokenparams['token'] : '';
         $tokenrec->idtoken = $tokenparams['id_token'];
         $DB->update_record('auth_oidc_token', $tokenrec);
     }
